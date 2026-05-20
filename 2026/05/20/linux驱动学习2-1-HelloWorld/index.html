@@ -1,0 +1,463 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>linux驱动学习2-1-HelloWorld | 若邪的博客空间</title><meta name="author" content="ruoxie"><meta name="copyright" content="ruoxie"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="linux驱动学习2-1-HelloWorld 本篇将手把手详细讲述如何运行第一个驱动程序-HelloWord  目录 搭建驱动环境 编写驱动程序 编译内核  一 搭建驱动环境1.1 下载DEB包到开发板下载linux-headers-6.1.141_6.1.141-1_arm64.deb 本地直接下载  下载linux-libc-dev_6.1.141-1_arm64.deb 本地直接下载  1">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux驱动学习2-1-HelloWorld">
+<meta property="og:url" content="https://ruoxie188.github.io/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/index.html">
+<meta property="og:site_name" content="若邪的博客空间">
+<meta property="og:description" content="linux驱动学习2-1-HelloWorld 本篇将手把手详细讲述如何运行第一个驱动程序-HelloWord  目录 搭建驱动环境 编写驱动程序 编译内核  一 搭建驱动环境1.1 下载DEB包到开发板下载linux-headers-6.1.141_6.1.141-1_arm64.deb 本地直接下载  下载linux-libc-dev_6.1.141-1_arm64.deb 本地直接下载  1">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ruoxie188.github.io/new-blog/img/avatar.jpg">
+<meta property="article:published_time" content="2026-05-20T03:40:29.000Z">
+<meta property="article:modified_time" content="2026-05-20T04:43:58.353Z">
+<meta property="article:author" content="ruoxie">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ruoxie188.github.io/new-blog/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "linux驱动学习2-1-HelloWorld",
+  "url": "https://ruoxie188.github.io/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/",
+  "image": "https://ruoxie188.github.io/new-blog/img/avatar.jpg",
+  "datePublished": "2026-05-20T03:40:29.000Z",
+  "dateModified": "2026-05-20T04:43:58.353Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "ruoxie",
+      "url": "https://ruoxie188.github.io/new-blog"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/new-blog/img/favicon.png"><link rel="canonical" href="https://ruoxie188.github.io/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/new-blog/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/new-blog/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":300,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'linux驱动学习2-1-HelloWorld',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><style>#site-info { display: none !important; }</style><link rel="stylesheet" href="/new-blog/css/spine-player.css"><style>
+  /* 陈的固定位置 */
+  #spine-chen2-container {
+    position: fixed;
+    bottom: -55px;
+    left: 10px;         
+    width: 300px; 
+    height: 300px;
+    z-index: 9999;
+    pointer-events: none; 
+  }
+  @media screen and (max-width: 768px) { #spine-chen2-container { display: none; } }
+
+  /* 特效菜单按钮样式 - 完美对齐右下角按钮组 */
+  #atmosphere-btn { 
+    position: fixed; 
+    right: 10px; 
+    bottom: 5px; /* 调整此高度使其刚好排在右侧按钮组最上方 */
+    width: 35px; 
+    height: 35px; 
+    background: #49b1f5; 
+    color: #fff; 
+    border-radius: 5px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    z-index: 10001; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+    transition: all 0.3s; 
+  }
+  #atmosphere-btn:hover { background: #ff7242; }
+  
+  /* 特效弹出菜单 */
+  #atmosphere-menu { 
+    position: fixed; 
+    right: 50px; 
+    bottom: 5px; 
+    background: var(--card-bg, #ffffff); 
+    border-radius: 8px; 
+    display: flex; 
+    padding: 5px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+    z-index: 10000; 
+    transition: all 0.3s; 
+    transform: scale(0.8); 
+    opacity: 0; 
+    pointer-events: none; 
+    transform-origin: right center; 
+  }
+  #atmosphere-menu.show { opacity: 1; transform: scale(1); pointer-events: all; }
+  
+  .atm-item { 
+    width: 32px; 
+    height: 32px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    margin: 2px; 
+    border-radius: 4px; 
+    transition: 0.2s; 
+    font-size: 16px; 
+  }
+  .atm-item:hover, .atm-item.active { background: #49b1f5; color: #fff; }
+  
+  /* 特效 Canvas 容器 */
+  #atm-canvas { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    z-index: 9998; 
+    pointer-events: none; 
+  }
+</style>
+<meta name="generator" content="Hexo 8.1.2"></head><body><div class="bg-animation" id="web_bg" style="background-color: #f4f4f4;"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/new-blog/img/avatar.jpg" onerror="this.onerror=null;this.src='/new-blog/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/new-blog/archives/"><div class="headline">文章</div><div class="length-num">3</div></a><a href="/new-blog/tags/"><div class="headline">标签</div><div class="length-num">0</div></a><a href="/new-blog/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/new-blog/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg fixed" id="page-header" style="background-image: url(https://t.alcy.cc/ycy);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/new-blog/"><span class="site-name">若邪的博客空间</span></a><a class="nav-page-title" href="/new-blog/"><span class="site-name">linux驱动学习2-1-HelloWorld</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/new-blog/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">linux驱动学习2-1-HelloWorld</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-05-20T03:40:29.000Z" title="发表于 2026-05-20 11:40:29">2026-05-20</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-05-20T04:43:58.353Z" title="更新于 2026-05-20 12:43:58">2026-05-20</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="linux驱动学习2-1-HelloWorld"><a href="#linux驱动学习2-1-HelloWorld" class="headerlink" title="linux驱动学习2-1-HelloWorld"></a>linux驱动学习2-1-HelloWorld</h1><blockquote>
+<p>本篇将手把手详细讲述如何运行第一个驱动程序-HelloWord</p>
+</blockquote>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ol>
+<li><a href="#%E4%B8%80-%E6%90%AD%E5%BB%BA%E9%A9%B1%E5%8A%A8%E7%8E%AF%E5%A2%83">搭建驱动环境</a></li>
+<li><a href="#%E4%BA%8C-%E7%BC%96%E5%86%99%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F">编写驱动程序</a></li>
+<li><a href="#%E4%B8%89-%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8">编译内核</a></li>
+</ol>
+<h2 id="一-搭建驱动环境"><a href="#一-搭建驱动环境" class="headerlink" title="一 搭建驱动环境"></a>一 搭建驱动环境</h2><h3 id="1-1-下载DEB包到开发板"><a href="#1-1-下载DEB包到开发板" class="headerlink" title="1.1 下载DEB包到开发板"></a>1.1 下载DEB包到开发板</h3><p><strong>下载linux-headers-6.1.141_6.1.141-1_arm64.deb</strong></p>
+<a class="btn-beautify blue" href="/new-blog/linux-headers-6.1.141_6.1.141-1_arm64.deb" title="本地直接下载"><i class="fas fa-download"></i><span>本地直接下载</span></a>
+
+<p><strong>下载linux-libc-dev_6.1.141-1_arm64.deb</strong></p>
+<a class="btn-beautify blue" href="/new-blog/linux-libc-dev_6.1.141-1_arm64.deb" title="本地直接下载"><i class="fas fa-download"></i><span>本地直接下载</span></a>
+
+<h3 id="1-2-安装DEB包"><a href="#1-2-安装DEB包" class="headerlink" title="1.2 安装DEB包"></a>1.2 安装DEB包</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 强行安装并覆盖之前的版本</span></span><br><span class="line">dpkg -i linux-headers-6.1.141_6.1.141-1_arm64.deb linux-libc-dev_6.1.141-1_arm64.deb</span><br></pre></td></tr></table></figure>
+
+<p><strong>▼ 运行输出界面：</strong></p>
+<p><img src="/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/1.png" alt="安装DEB包"></p>
+<p><strong>修正软链接</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 因为你的包名没有后缀，所以路径应该是 /usr/src/linux-headers-6.1.141</span></span><br><span class="line"><span class="built_in">ln</span> -sfn /usr/src/linux-headers-6.1.141 /lib/modules/$(<span class="built_in">uname</span> -r)/build</span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证链接是否生效</span></span><br><span class="line"><span class="built_in">ls</span> -l /lib/modules/$(<span class="built_in">uname</span> -r)/build</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-3-验证内置工具架构"><a href="#1-3-验证内置工具架构" class="headerlink" title="1.3 验证内置工具架构"></a>1.3 验证内置工具架构</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">file /lib/modules/$(<span class="built_in">uname</span> -r)/build/scripts/basic/fixdep</span><br></pre></td></tr></table></figure>
+
+<p><strong>▼ 运行输出界面：</strong></p>
+<p><img src="/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/2.png" alt="验证内置工具架构"></p>
+<h2 id="二-编写驱动程序"><a href="#二-编写驱动程序" class="headerlink" title="二 编写驱动程序"></a>二 编写驱动程序</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#创建文件夹</span></span><br><span class="line"><span class="built_in">mkdir</span> hello_tspi</span><br><span class="line"><span class="built_in">cd</span> hello_tspi/</span><br><span class="line">vi hello.c</span><br></pre></td></tr></table></figure>
+
+<p><strong>hello.c代码</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#include &lt;linux/module.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/kernel.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/init.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;generated/utsrelease.h&gt; // 显式包含以获取内核版本字符串</span></span><br><span class="line"></span><br><span class="line">static int __init hello_tspi_init(void)</span><br><span class="line">&#123;</span><br><span class="line">    printk(KERN_INFO <span class="string">&quot;========================================\n&quot;</span>);</span><br><span class="line">    printk(KERN_INFO <span class="string">&quot;泰山派 (TaishanPi) 驱动加载成功!\n&quot;</span>);</span><br><span class="line">    </span><br><span class="line">    printk(KERN_INFO <span class="string">&quot;内核版本: %s\n&quot;</span>, UTS_RELEASE);</span><br><span class="line">    </span><br><span class="line">    printk(KERN_INFO <span class="string">&quot;========================================\n&quot;</span>);</span><br><span class="line">    <span class="built_in">return</span> 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static void __exit hello_tspi_exit(void)</span><br><span class="line">&#123;</span><br><span class="line">    printk(KERN_INFO <span class="string">&quot;泰山派模块已安全卸载!\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(hello_tspi_init);</span><br><span class="line">module_exit(hello_tspi_exit);</span><br><span class="line"></span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;Tspi_User&quot;</span>);</span><br><span class="line">MODULE_DESCRIPTION(<span class="string">&quot;TaishanPi Native Build Test&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> hello_tspi/</span><br><span class="line">vi Makefile</span><br></pre></td></tr></table></figure>
+<p><strong>Makefile代码</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">obj-m += hello.o</span><br><span class="line"></span><br><span class="line"><span class="comment"># 自动获取当前运行内核的构建路径</span></span><br><span class="line">KDIR := /lib/modules/$(shell <span class="built_in">uname</span> -r)/build</span><br><span class="line">PWD  := $(shell <span class="built_in">pwd</span>)</span><br><span class="line"></span><br><span class="line">all:</span><br><span class="line">	make -C $(KDIR) M=$(PWD) modules</span><br><span class="line"></span><br><span class="line">clean:</span><br><span class="line">	make -C $(KDIR) M=$(PWD) clean</span><br></pre></td></tr></table></figure>
+
+<h2 id="三-运行驱动程序"><a href="#三-运行驱动程序" class="headerlink" title="三 运行驱动程序"></a>三 运行驱动程序</h2><h3 id="3-1-编译驱动程序"><a href="#3-1-编译驱动程序" class="headerlink" title="3.1 编译驱动程序"></a>3.1 编译驱动程序</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#在hello_tspi/目录</span></span><br><span class="line">make</span><br></pre></td></tr></table></figure>
+
+<p><strong>▼ 运行输出界面：</strong></p>
+<p><img src="/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/3.png" alt="编译驱动程序"></p>
+<h3 id="3-2-运行编译好的驱动程序"><a href="#3-2-运行编译好的驱动程序" class="headerlink" title="3.2 运行编译好的驱动程序"></a>3.2 运行编译好的驱动程序</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 加载</span></span><br><span class="line">insmod hello.ko</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看内核日志（你会看到你之前写的欢迎词）</span></span><br><span class="line">dmesg | <span class="built_in">tail</span> -n 10</span><br></pre></td></tr></table></figure>
+
+<p><strong>▼ 运行输出界面：</strong></p>
+<p><img src="/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/4.png" alt="运行结果"></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://ruoxie188.github.io/new-blog">ruoxie</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://ruoxie188.github.io/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/">https://ruoxie188.github.io/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://ruoxie188.github.io/new-blog" target="_blank">若邪的博客空间</a>！</span></div></div><div class="tag_share"><div class="post-share"><div class="social-share" data-image="/new-blog/img/avatar.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A01-1-%E5%88%B6%E4%BD%9CDEB%E5%8C%85/" title="linux驱动学习-制作DEB包"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">linux驱动学习-制作DEB包</div></div><div class="info-2"><div class="info-item-1">linux驱动学习-制作DEB包 本篇将手把手详细讲述如何制作DEB包  目录 QEMU环境搭建 构建Docker镜像 编译内核   一 QEMU环境搭建1.1 搭建arm64环境123sudo apt-get install -y qemu-user-static binfmt-support# 这一步是核心，让 x86 电脑能运行 ARM64 指令docker run --rm --privileged docker.m.daocloud.io/multiarch/qemu-user-static --reset -p yes  ▼ 运行输出界面：  二 构建Docker镜像2.1 创建文件夹12mkdir -p ~/tspi_new/docker     # 存放 Dockerfilemkdir -p ~/tspi_new/output     # 存放生成的 deb  2.2 创建Dockerfile12cd ~/tspi_new/docker/vi Dockerfile  Dockerfile源码 123456789101112131415161718192021222...</div></div></div></a><a class="pagination-related" href="/new-blog/2026/05/16/hello-world/" title="Hello World"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">Hello World</div></div><div class="info-2"><div class="info-item-1">Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub.  本篇将手把手详细讲述如何在Radxa rock 5T 使用RKNN和NPu运行YOLOV5  目录 模型转换环境搭建 转换模型 模型运行环境搭建 运行模型    Quick StartCreate a new post1$ hexo new &quot;My New Post&quot;  More info: Writing Run server1$ hexo server  More info: Server Generate static files1$ hexo generate  More info: Generating Deploy to remote sites1$ hexo d...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/new-blog/img/avatar.jpg" onerror="this.onerror=null;this.src='/new-blog/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">ruoxie</div><div class="author-info-description">既然出发了，就不要回头。</div><div class="site-data"><a href="/new-blog/archives/"><div class="headline">文章</div><div class="length-num">3</div></a><a href="/new-blog/tags/"><div class="headline">标签</div><div class="length-num">0</div></a><a href="/new-blog/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/ruoxie188"><i class="fab fa-github"></i><span>关注我</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/ruoxie188" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:你的邮箱@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的新博客！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld"><span class="toc-number">1.</span> <span class="toc-text">linux驱动学习2-1-HelloWorld</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.1.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80-%E6%90%AD%E5%BB%BA%E9%A9%B1%E5%8A%A8%E7%8E%AF%E5%A2%83"><span class="toc-number">1.2.</span> <span class="toc-text">一 搭建驱动环境</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E4%B8%8B%E8%BD%BDDEB%E5%8C%85%E5%88%B0%E5%BC%80%E5%8F%91%E6%9D%BF"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.1 下载DEB包到开发板</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E5%AE%89%E8%A3%85DEB%E5%8C%85"><span class="toc-number">1.2.2.</span> <span class="toc-text">1.2 安装DEB包</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-%E9%AA%8C%E8%AF%81%E5%86%85%E7%BD%AE%E5%B7%A5%E5%85%B7%E6%9E%B6%E6%9E%84"><span class="toc-number">1.2.3.</span> <span class="toc-text">1.3 验证内置工具架构</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C-%E7%BC%96%E5%86%99%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F"><span class="toc-number">1.3.</span> <span class="toc-text">二 编写驱动程序</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89-%E8%BF%90%E8%A1%8C%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F"><span class="toc-number">1.4.</span> <span class="toc-text">三 运行驱动程序</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E7%BC%96%E8%AF%91%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F"><span class="toc-number">1.4.1.</span> <span class="toc-text">3.1 编译驱动程序</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E8%BF%90%E8%A1%8C%E7%BC%96%E8%AF%91%E5%A5%BD%E7%9A%84%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F"><span class="toc-number">1.4.2.</span> <span class="toc-text">3.2 运行编译好的驱动程序</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A01-1-%E5%88%B6%E4%BD%9CDEB%E5%8C%85/" title="linux驱动学习-制作DEB包">linux驱动学习-制作DEB包</a><time datetime="2026-05-20T07:30:22.000Z" title="发表于 2026-05-20 15:30:22">2026-05-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/" title="linux驱动学习2-1-HelloWorld">linux驱动学习2-1-HelloWorld</a><time datetime="2026-05-20T03:40:29.000Z" title="发表于 2026-05-20 11:40:29">2026-05-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/new-blog/2026/05/16/hello-world/" title="Hello World">Hello World</a><time datetime="2026-05-16T04:34:55.488Z" title="发表于 2026-05-16 12:34:55">2026-05-16</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By ruoxie</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.2</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/new-blog/js/utils.js?v=5.5.4"></script><script src="/new-blog/js/main.js?v=5.5.4"></script><div class="js-pjax"></div><script src="/new-blog/js/spine-player.js"></script><div id="spine-chen2-container"></div><div id="atmosphere-btn" title="特效菜单"><i class="fas fa-magic"></i></div><div id="atmosphere-menu">
+  <div class="atm-item" data-type="snow" title="雪花">❄️</div>
+  <div class="atm-item" data-type="sakura" title="樱花">🌸</div>
+  <div class="atm-item" data-type="heart" title="爱心">❤️</div>
+  <div class="atm-item" data-type="star" title="星星">✨</div>
+  <div class="atm-item" data-type="off" title="关闭特效">🚫</div>
+</div>
+<script>
+  // ==========================================
+  // 1. GitHub 贡献墙
+  // ==========================================
+  function finalStyleInject() {
+    var target = document.getElementById('recent-posts');
+    if (!target || document.getElementById('gh-perfect-card')) return;
+    var card = document.createElement('div');
+    card.id = 'gh-perfect-card';
+    card.className = 'recent-post-item'; 
+    card.style.padding = '20px 30px';
+    card.style.flexDirection = 'column';
+    card.style.alignItems = 'flex-start';
+    card.innerHTML = `<div style="font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: var(--font-color);"><i class="fab fa-github" style="margin-right:8px"></i>GitHub 贡献墙</div><div style="width:100%; overflow-x: auto;"><img src="https://ghchart.rshah.org/40c463/ruoxie188" style="width:100%; min-width: 650px; height:auto; display:block;" alt="GitHub Contribution Chart"></div>`;
+    target.insertBefore(card, target.firstChild);
+    var oldCard = document.getElementById('gh-test-card');
+    if (oldCard) oldCard.remove();
+  }
+
+  // ==========================================
+  // 2. Spine 模型加载
+  // ==========================================
+  function initSpine() {
+    if (typeof spine === 'undefined') { 
+      setTimeout(initSpine, 300); 
+      return; 
+    }
+    if (document.querySelector('#spine-chen2-container canvas')) return;
+    try {
+      new spine.SpinePlayer("spine-chen2-container", {
+        skelUrl: "/new-blog/assets/spine/chen2/chen2.skel",
+        atlasUrl: "/new-blog/assets/spine/chen2/chen2.atlas",
+        animation: "Idle",
+        premultipliedAlpha: true,
+        backgroundColor: "#00000000",
+        alpha: true,
+        showControls: false
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // ==========================================
+  // 3. Canvas 多功能粒子特效引擎
+  // ==========================================
+  (function() {
+    let canvas = document.getElementById('atm-canvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.id = 'atm-canvas';
+      document.body.appendChild(canvas);
+    }
+    const ctx = canvas.getContext('2d');
+    let animationFrameId = null;
+    let particles = [];
+    let currentType = 'off';
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      constructor(type, isInit = false) {
+        this.type = type;
+        this.reset(isInit);
+      }
+      reset(isInit = false) {
+        this.x = Math.random() * canvas.width;
+        this.y = isInit ? Math.random() * canvas.height : -20;
+        this.size = Math.random() * 8 + 6;
+        this.speedY = Math.random() * 1.2 + 0.6;
+        this.speedX = Math.random() * 1.0 - 0.5;
+        this.angle = Math.random() * Math.PI * 2;
+        this.spin = Math.random() * 0.02 - 0.01;
+        this.opacity = Math.random() * 0.4 + 0.5;
+      }
+      update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        this.angle += this.spin;
+        if (this.y > canvas.height + 20 || this.x < -20 || this.x > canvas.width + 20) {
+          this.reset(false);
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        if (this.type === 'snow') {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'sakura') {
+          ctx.fillStyle = '#ffb7c5';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, this.size, this.size / 1.7, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'heart') {
+          ctx.font = `${this.size * 1.5}px Arial`;
+          ctx.fillText('❤️', -this.size, this.size / 2);
+        } else if (this.type === 'star') {
+          ctx.font = `${this.size * 1.5}px Arial`;
+          ctx.fillText('✨', -this.size, this.size / 2);
+        }
+        ctx.restore();
+      }
+    }
+
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (currentType === 'off') return;
+
+      if (particles.length < 50) {
+        particles.push(new Particle(currentType, false));
+      }
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      animationFrameId = requestAnimationFrame(loop);
+    }
+
+    window.setAtmosphere = function(type) {
+      currentType = type;
+      cancelAnimationFrame(animationFrameId);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles = [];
+      if (type !== 'off') {
+        for (let i = 0; i < 25; i++) {
+          particles.push(new Particle(type, true));
+        }
+        loop();
+      }
+    };
+
+    // 绑定菜单控制
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('atmosphere-btn');
+      const menu = document.getElementById('atmosphere-menu');
+      if(btn && menu) {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          menu.classList.toggle('show');
+        });
+        document.querySelectorAll('.atm-item').forEach(item => {
+          item.addEventListener('click', function() {
+            document.querySelectorAll('.atm-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            window.setAtmosphere(this.getAttribute('data-type'));
+            menu.classList.remove('show');
+          });
+        });
+        document.addEventListener('click', () => menu.classList.remove('show'));
+      }
+    });
+  })();
+
+  // ==========================================
+  // 4. 统一执行
+  // ==========================================
+  function runCustomScripts() {
+    finalStyleInject();
+    initSpine();
+  }
+
+  window.addEventListener('load', runCustomScripts);
+  document.addEventListener('pjax:complete', runCustomScripts);
+  runCustomScripts();
+</script>
+<script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
