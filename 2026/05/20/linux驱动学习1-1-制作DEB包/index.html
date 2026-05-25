@@ -158,7 +158,7 @@
   isHighlightShrink: false,
   isToc: true,
   pageType: 'post'
-}</script><style>#site-info { display: none !important; }</style><link rel="stylesheet" href="/new-blog/css/spine-player.css"><style>
+}</script><style>#site-info { display: none !important; }</style><link rel="stylesheet" href="/new-blog/css/spine-player.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css"><style>
   /* 陈的固定位置 */
   #spine-chen2-container {
     position: fixed;
@@ -233,6 +233,37 @@
     height: 100%; 
     z-index: 9998; 
     pointer-events: none; 
+  }
+
+  .aplayer.aplayer-fixed {
+    position: absolute !important; /* 从 fixed 改为 absolute */
+    top: 75px !important;          /* 距离页面最顶部 75px */
+    bottom: auto !important;
+    left: 20px !important;          /* 距离左侧 20px */
+    z-index: 99;                   /* 确保在封面图上方，但低于某些全局大图 */
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  
+  /* 2. 内层主体也改为 absolute，相对于外层容器定位 */
+  .aplayer.aplayer-fixed .aplayer-body {
+    position: absolute !important; /* 从 fixed 改为 absolute */
+    top: 0 !important;             /* 紧贴外层容器顶部 */
+    bottom: auto !important;
+    left: 0 !important;            /* 紧贴外层容器左侧 */
+    background: var(--card-bg, #ffffff) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important; /* 给小挂件一个好看的阴影 */
+    border-radius: 8px !important;  /* 稍微圆润一点，更像挂件 */
+  }
+
+  /* 3. 修复折叠模式（窄屏）下的定位 */
+  .aplayer.aplayer-narrow.aplayer-fixed .aplayer-body {
+    left: 0 !important;
+  }
+
+  /* 4. 移动端下隐藏整个播放器 */
+  @media screen and (max-width: 768px) {
+    .aplayer.aplayer-fixed { display: none !important; }
   }
 </style>
 <meta name="generator" content="Hexo 8.1.2"></head><body><div class="bg-animation" id="web_bg" style="background-color: #f4f4f4;"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/new-blog/img/avatar.jpg" onerror="this.onerror=null;this.src='/new-blog/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/new-blog/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/new-blog/tags/"><div class="headline">标签</div><div class="length-num">0</div></a><a href="/new-blog/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/new-blog/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg fixed" id="page-header" style="background-image: url(https://t.alcy.cc/ycy);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/new-blog/"><span class="site-name">若邪的博客空间</span></a><a class="nav-page-title" href="/new-blog/"><span class="site-name">linux驱动学习1-1-制作DEB包</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/new-blog/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">linux驱动学习1-1-制作DEB包</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-05-20T07:30:22.000Z" title="发表于 2026-05-20 15:30:22">2026-05-20</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-05-25T09:30:56.420Z" title="更新于 2026-05-25 17:30:56">2026-05-25</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="linux驱动学习1-1-制作DEB包"><a href="#linux驱动学习1-1-制作DEB包" class="headerlink" title="linux驱动学习1-1-制作DEB包"></a>linux驱动学习1-1-制作DEB包</h1><blockquote>
@@ -534,4 +565,15 @@
   document.addEventListener('pjax:complete', runCustomScripts);
   runCustomScripts();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script><meting-js
+  server="tencent"
+  type="playlist"
+  id="9581551707" 
+  fixed="true"
+  mini="true"
+  order="random"
+  loop="all"
+  preload="auto"
+  volume="0.3">
+</meting-js>   
 <script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
