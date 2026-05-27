@@ -1,0 +1,581 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>linux驱动学习5-1-使用tft屏幕运行lvgl | 若邪的博客空间</title><meta name="author" content="ruoxie"><meta name="copyright" content="ruoxie"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="linux驱动学习5-1-使用tft屏幕运行lvgl 本篇将手把手详细讲述使用tft屏幕运行lvgl  目录 搭建lvgl环境 编译lvgl 编写程序 运行程序   一 搭建LVGL环境1.1 创建文件夹12mkdir lvgl_st7789cd lvgl_st7789  1.2 拉取lvgl代码12# 克隆 LVGL v8.3 分支并只拉取最近的提交，速度更快git clone -b relea">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux驱动学习5-1-使用tft屏幕运行lvgl">
+<meta property="og:url" content="https://ruoxie188.github.io/new-blog/2026/05/27/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A05-1-%E4%BD%BF%E7%94%A8tft%E5%B1%8F%E5%B9%95%E8%BF%90%E8%A1%8Clvgl/index.html">
+<meta property="og:site_name" content="若邪的博客空间">
+<meta property="og:description" content="linux驱动学习5-1-使用tft屏幕运行lvgl 本篇将手把手详细讲述使用tft屏幕运行lvgl  目录 搭建lvgl环境 编译lvgl 编写程序 运行程序   一 搭建LVGL环境1.1 创建文件夹12mkdir lvgl_st7789cd lvgl_st7789  1.2 拉取lvgl代码12# 克隆 LVGL v8.3 分支并只拉取最近的提交，速度更快git clone -b relea">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ruoxie188.github.io/new-blog/img/avatar.jpg">
+<meta property="article:published_time" content="2026-05-27T13:38:34.000Z">
+<meta property="article:modified_time" content="2026-05-27T14:28:09.601Z">
+<meta property="article:author" content="ruoxie">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ruoxie188.github.io/new-blog/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "linux驱动学习5-1-使用tft屏幕运行lvgl",
+  "url": "https://ruoxie188.github.io/new-blog/2026/05/27/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A05-1-%E4%BD%BF%E7%94%A8tft%E5%B1%8F%E5%B9%95%E8%BF%90%E8%A1%8Clvgl/",
+  "image": "https://ruoxie188.github.io/new-blog/img/avatar.jpg",
+  "datePublished": "2026-05-27T13:38:34.000Z",
+  "dateModified": "2026-05-27T14:28:09.601Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "ruoxie",
+      "url": "https://ruoxie188.github.io/new-blog"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/new-blog/img/favicon.png"><link rel="canonical" href="https://ruoxie188.github.io/new-blog/2026/05/27/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A05-1-%E4%BD%BF%E7%94%A8tft%E5%B1%8F%E5%B9%95%E8%BF%90%E8%A1%8Clvgl/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/new-blog/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/new-blog/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":300,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'linux驱动学习5-1-使用tft屏幕运行lvgl',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><style>#site-info { display: none !important; }</style><link rel="stylesheet" href="/new-blog/css/spine-player.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css"><style>
+  /* 陈的固定位置 */
+  #spine-chen2-container {
+    position: fixed;
+    bottom: -55px;
+    left: 10px;         
+    width: 300px; 
+    height: 300px;
+    z-index: 9999;
+    pointer-events: none; 
+  }
+  @media screen and (max-width: 768px) { #spine-chen2-container { display: none; } }
+
+  /* 特效菜单按钮样式 - 完美对齐右下角按钮组 */
+  #atmosphere-btn { 
+    position: fixed; 
+    right: 10px; 
+    bottom: 5px; /* 调整此高度使其刚好排在右侧按钮组最上方 */
+    width: 35px; 
+    height: 35px; 
+    background: #49b1f5; 
+    color: #fff; 
+    border-radius: 5px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    z-index: 10001; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+    transition: all 0.3s; 
+  }
+  #atmosphere-btn:hover { background: #ff7242; }
+  
+  /* 特效弹出菜单 */
+  #atmosphere-menu { 
+    position: fixed; 
+    right: 50px; 
+    bottom: 5px; 
+    background: var(--card-bg, #ffffff); 
+    border-radius: 8px; 
+    display: flex; 
+    padding: 5px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+    z-index: 10000; 
+    transition: all 0.3s; 
+    transform: scale(0.8); 
+    opacity: 0; 
+    pointer-events: none; 
+    transform-origin: right center; 
+  }
+  #atmosphere-menu.show { opacity: 1; transform: scale(1); pointer-events: all; }
+  
+  .atm-item { 
+    width: 32px; 
+    height: 32px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    margin: 2px; 
+    border-radius: 4px; 
+    transition: 0.2s; 
+    font-size: 16px; 
+  }
+  .atm-item:hover, .atm-item.active { background: #49b1f5; color: #fff; }
+  
+  /* 特效 Canvas 容器 */
+  #atm-canvas { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    z-index: 9998; 
+    pointer-events: none; 
+  }
+
+  .aplayer.aplayer-fixed {
+    position: absolute !important; /* 从 fixed 改为 absolute */
+    top: 75px !important;          /* 距离页面最顶部 75px */
+    bottom: auto !important;
+    left: 20px !important;          /* 距离左侧 20px */
+    z-index: 99;                   /* 确保在封面图上方，但低于某些全局大图 */
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  
+  /* 2. 内层主体也改为 absolute，相对于外层容器定位 */
+  .aplayer.aplayer-fixed .aplayer-body {
+    position: absolute !important; /* 从 fixed 改为 absolute */
+    top: 0 !important;             /* 紧贴外层容器顶部 */
+    bottom: auto !important;
+    left: 0 !important;            /* 紧贴外层容器左侧 */
+    background: var(--card-bg, #ffffff) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important; /* 给小挂件一个好看的阴影 */
+    border-radius: 8px !important;  /* 稍微圆润一点，更像挂件 */
+  }
+
+  /* 3. 修复折叠模式（窄屏）下的定位 */
+  .aplayer.aplayer-narrow.aplayer-fixed .aplayer-body {
+    left: 0 !important;
+  }
+
+  /* 4. 移动端下隐藏整个播放器 */
+  @media screen and (max-width: 768px) {
+    .aplayer.aplayer-fixed { display: none !important; }
+  }
+</style>
+<meta name="generator" content="Hexo 8.1.2"></head><body><div class="bg-animation" id="web_bg" style="background-color: #f4f4f4;"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/new-blog/img/avatar.jpg" onerror="this.onerror=null;this.src='/new-blog/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/new-blog/archives/"><div class="headline">文章</div><div class="length-num">3</div></a><a href="/new-blog/tags/"><div class="headline">标签</div><div class="length-num">0</div></a><a href="/new-blog/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/new-blog/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg fixed" id="page-header" style="background-image: url(https://t.alcy.cc/ycy);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/new-blog/"><span class="site-name">若邪的博客空间</span></a><a class="nav-page-title" href="/new-blog/"><span class="site-name">linux驱动学习5-1-使用tft屏幕运行lvgl</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/new-blog/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/new-blog/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">linux驱动学习5-1-使用tft屏幕运行lvgl</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-05-27T13:38:34.000Z" title="发表于 2026-05-27 21:38:34">2026-05-27</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-05-27T14:28:09.601Z" title="更新于 2026-05-27 22:28:09">2026-05-27</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="linux驱动学习5-1-使用tft屏幕运行lvgl"><a href="#linux驱动学习5-1-使用tft屏幕运行lvgl" class="headerlink" title="linux驱动学习5-1-使用tft屏幕运行lvgl"></a>linux驱动学习5-1-使用tft屏幕运行lvgl</h1><blockquote>
+<p>本篇将手把手详细讲述使用tft屏幕运行lvgl</p>
+</blockquote>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ol>
+<li><a href="#%E4%B8%80-%E6%90%AD%E5%BB%BA-LVGL-%E7%8E%AF%E5%A2%83">搭建lvgl环境</a></li>
+<li><a href="#%E4%BA%8C-%E7%BC%96%E8%AF%91lvgl">编译lvgl</a></li>
+<li><a href="#%E4%B8%89-%E7%BC%96%E5%86%99%E7%A8%8B%E5%BA%8F">编写程序</a></li>
+<li><a href="#%E5%9B%9B-%E8%BF%90%E8%A1%8C%E7%A8%8B%E5%BA%8F">运行程序</a></li>
+</ol>
+<hr>
+<h2 id="一-搭建LVGL环境"><a href="#一-搭建LVGL环境" class="headerlink" title="一 搭建LVGL环境"></a>一 搭建LVGL环境</h2><h3 id="1-1-创建文件夹"><a href="#1-1-创建文件夹" class="headerlink" title="1.1 创建文件夹"></a>1.1 创建文件夹</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> lvgl_st7789</span><br><span class="line"><span class="built_in">cd</span> lvgl_st7789</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-2-拉取lvgl代码"><a href="#1-2-拉取lvgl代码" class="headerlink" title="1.2 拉取lvgl代码"></a>1.2 拉取lvgl代码</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 克隆 LVGL v8.3 分支并只拉取最近的提交，速度更快</span></span><br><span class="line">git <span class="built_in">clone</span> -b release/v8.3 --depth=1 https://github.com/lvgl/lvgl.git</span><br></pre></td></tr></table></figure>
+
+<p><strong>网络不好直接上传文件到lvgl_st7789&#x2F;,然后解压</strong></p>
+<a class="btn-beautify blue" href="/new-blog/2026/05/27/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A05-1-%E4%BD%BF%E7%94%A8tft%E5%B1%8F%E5%B9%95%E8%BF%90%E8%A1%8Clvgl/lvgl.zip" title="本地直接下载"><i class="fas fa-download"></i><span>本地直接下载</span></a>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> lvgl_st7789</span><br><span class="line">unzip lvgl.zip</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-3-配置lv-conf-h"><a href="#1-3-配置lv-conf-h" class="headerlink" title="1.3 配置lv_conf.h"></a>1.3 配置lv_conf.h</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> lvgl/lv_conf_template.h lv_conf.h</span><br><span class="line"><span class="comment"># 将第一步的 &quot;#if 0&quot; 改成 &quot;#if 1&quot; 使其生效</span></span><br><span class="line">sed -i <span class="string">&#x27;s/#if 0\s*\/\*Set it to &quot;1&quot; to enable content\*\//#if 1 \/\*Set it to &quot;1&quot; to enable content\*\//g&#x27;</span> lv_conf.h</span><br><span class="line"><span class="comment"># 将默认颜色深度改为 16 位 (符合 ST7789 屏幕)</span></span><br><span class="line">sed -i <span class="string">&#x27;s/#define LV_COLOR_DEPTH 32/#define LV_COLOR_DEPTH 16/g&#x27;</span> lv_conf.h</span><br><span class="line"><span class="comment">#采用小端模式</span></span><br><span class="line">sed -i <span class="string">&#x27;s/#define LV_COLOR_16_SWAP 0/#define LV_COLOR_16_SWAP 1/g&#x27;</span> lv_conf.h</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-4-编写main-c代码"><a href="#1-4-编写main-c代码" class="headerlink" title="1.4 编写main.c代码"></a>1.4 编写main.c代码</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#include &lt;unistd.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;fcntl.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;sys/ioctl.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;stdio.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;stdlib.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;stdint.h&gt;</span></span><br><span class="line"><span class="comment">#include &quot;lvgl/lvgl.h&quot;</span></span><br><span class="line"></span><br><span class="line">/* 标准窗口定义结构体，必须与驱动保持一致 */</span><br><span class="line">struct st7789v_window &#123;</span><br><span class="line">    unsigned int x1;</span><br><span class="line">    unsigned int y1;</span><br><span class="line">    unsigned int x2;</span><br><span class="line">    unsigned int y2;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">#define ST7789V_IOC_MAGIC &#x27;s&#x27;</span></span><br><span class="line"><span class="comment">#define ST7789V_SET_WINDOW _IOW(ST7789V_IOC_MAGIC, 1, struct st7789v_window)</span></span><br><span class="line"></span><br><span class="line">static int screen_fd = -1;</span><br><span class="line"></span><br><span class="line">/* LVGL 刷屏回调函数 */</span><br><span class="line">static void my_disp_flush_cb(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)</span><br><span class="line">&#123;</span><br><span class="line">    struct st7789v_window win;</span><br><span class="line">    int32_t width = area-&gt;x2 - area-&gt;x1 + 1;</span><br><span class="line">    int32_t height = area-&gt;y2 - area-&gt;y1 + 1;</span><br><span class="line">    size_t data_size = width * height * sizeof(lv_color_t);</span><br><span class="line"></span><br><span class="line">    // 1. 设置刷新视窗坐标 (使用统一的结构体传递)</span><br><span class="line">    win.x1 = area-&gt;x1; </span><br><span class="line">    win.y1 = area-&gt;y1; </span><br><span class="line">    win.x2 = area-&gt;x2; </span><br><span class="line">    win.y2 = area-&gt;y2; </span><br><span class="line"></span><br><span class="line">    // 发送 ioctl 命令设置硬件窗口，不再报错 Inappropriate ioctl</span><br><span class="line">    <span class="keyword">if</span> (ioctl(screen_fd, ST7789V_SET_WINDOW, &amp;win) &lt; 0) &#123;</span><br><span class="line">        perror(<span class="string">&quot;ioctl window set failed&quot;</span>);</span><br><span class="line">        <span class="built_in">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 2. 将渲染缓冲数据写入字符设备</span><br><span class="line">    <span class="keyword">if</span> (write(screen_fd, (void*)color_p, data_size) &lt; 0) &#123;</span><br><span class="line">        perror(<span class="string">&quot;write screen failed&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 3. 告知 LVGL 刷屏完成</span><br><span class="line">    lv_disp_flush_ready(disp_drv);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int main(void)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Starting LVGL Application with Struct-Based IOCTL...\n&quot;</span>);</span><br><span class="line">    lv_init();</span><br><span class="line"></span><br><span class="line">    screen_fd = open(<span class="string">&quot;/dev/st7789v&quot;</span>, O_RDWR);</span><br><span class="line">    <span class="keyword">if</span> (screen_fd &lt; 0) &#123;</span><br><span class="line">        perror(<span class="string">&quot;Cannot open /dev/st7789v&quot;</span>);</span><br><span class="line">        <span class="built_in">return</span> -1;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 申请双显缓冲区 (为提高流畅度，采用 240 * 20 像素大小)</span><br><span class="line">    static lv_disp_draw_buf_t draw_buf;</span><br><span class="line">    static lv_color_t buf1[240 * 20]; </span><br><span class="line">    lv_disp_draw_buf_init(&amp;draw_buf, buf1, NULL, 240 * 20);</span><br><span class="line"></span><br><span class="line">    // 注册显示驱动</span><br><span class="line">    static lv_disp_drv_t disp_drv;</span><br><span class="line">    lv_disp_drv_init(&amp;disp_drv);</span><br><span class="line">    disp_drv.hor_res = 240;</span><br><span class="line">    disp_drv.ver_res = 320;</span><br><span class="line">    disp_drv.flush_cb = my_disp_flush_cb;</span><br><span class="line">    disp_drv.draw_buf = &amp;draw_buf;</span><br><span class="line">    lv_disp_drv_register(&amp;disp_drv);</span><br><span class="line"></span><br><span class="line">    // 创建一个酷炫的 UI 界面</span><br><span class="line">    lv_obj_t * label = lv_label_create(lv_scr_act());</span><br><span class="line">    lv_label_set_text(label, <span class="string">&quot;Hello TaishanPi!\nRuning ST7789 OK&quot;</span>);</span><br><span class="line">    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);</span><br><span class="line"></span><br><span class="line">    // 创建一个按钮</span><br><span class="line">    lv_obj_t * btn = lv_btn_create(lv_scr_act());</span><br><span class="line">    lv_obj_align(btn, LV_ALIGN_CENTER, 0, 50);</span><br><span class="line">    lv_obj_t * btn_label = lv_label_create(btn);</span><br><span class="line">    lv_label_set_text(btn_label, <span class="string">&quot;Click Me&quot;</span>);</span><br><span class="line">    lv_obj_center(btn_label);</span><br><span class="line"></span><br><span class="line">    // 引擎事件循环</span><br><span class="line">    <span class="keyword">while</span>(1) &#123;</span><br><span class="line">        lv_timer_handler();</span><br><span class="line">        usleep(5000); </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    close(screen_fd);</span><br><span class="line">    <span class="built_in">return</span> 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-5-编写Makefile"><a href="#1-5-编写Makefile" class="headerlink" title="1.5 编写Makefile"></a>1.5 编写Makefile</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">CC = gcc</span><br><span class="line">CFLAGS = -O3 -Wall -Wextra -Werror=unused-result -I./ -I./lvgl/</span><br><span class="line">LDFLAGS = -lpthread</span><br><span class="line"></span><br><span class="line"><span class="comment"># 核心修复：显式声明 LVGL 的目录前缀，防止路径拼接为 //</span></span><br><span class="line">LVGL_DIR_EXP = lvgl</span><br><span class="line">LVGL_DIR = $(LVGL_DIR_EXP)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 包含主程序文件</span></span><br><span class="line">CSRCS += main.c</span><br><span class="line"></span><br><span class="line"><span class="comment"># 导入 LVGL 编译规则</span></span><br><span class="line">include lvgl/lvgl.mk</span><br><span class="line"></span><br><span class="line">OBJS = $(CSRCS:.c=.o)</span><br><span class="line">TARGET = lvgl_demo</span><br><span class="line"></span><br><span class="line">all: $(TARGET)</span><br><span class="line"></span><br><span class="line">$(TARGET): $(OBJS)</span><br><span class="line">	$(CC) -o <span class="variable">$@</span> $^ $(LDFLAGS)</span><br><span class="line"></span><br><span class="line">%.o: %.c</span><br><span class="line">	$(CC) $(CFLAGS) -c -o <span class="variable">$@</span> $&lt;</span><br><span class="line"></span><br><span class="line">clean:</span><br><span class="line">	<span class="built_in">rm</span> -f $(TARGET) $(OBJS)</span><br></pre></td></tr></table></figure>
+
+<h2 id="二-编译LVGL"><a href="#二-编译LVGL" class="headerlink" title="二 编译LVGL"></a>二 编译LVGL</h2><h3 id="2-1-编译lvgl程序"><a href="#2-1-编译lvgl程序" class="headerlink" title="2.1 编译lvgl程序"></a>2.1 编译lvgl程序</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make -j4</span><br></pre></td></tr></table></figure>
+
+<h2 id="三-编写程序"><a href="#三-编写程序" class="headerlink" title="三 编写程序"></a>三 编写程序</h2><h3 id="3-1-创建文件夹"><a href="#3-1-创建文件夹" class="headerlink" title="3.1 创建文件夹"></a>3.1 创建文件夹</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> lvgl_st7789</span><br><span class="line"><span class="built_in">mkdir</span> st7789</span><br><span class="line">vi st7789.c</span><br></pre></td></tr></table></figure>
+
+<p><strong>编写st7789.c代码</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br><span class="line">287</span><br><span class="line">288</span><br><span class="line">289</span><br><span class="line">290</span><br><span class="line">291</span><br><span class="line">292</span><br><span class="line">293</span><br><span class="line">294</span><br><span class="line">295</span><br><span class="line">296</span><br><span class="line">297</span><br><span class="line">298</span><br><span class="line">299</span><br><span class="line">300</span><br><span class="line">301</span><br><span class="line">302</span><br><span class="line">303</span><br><span class="line">304</span><br><span class="line">305</span><br><span class="line">306</span><br><span class="line">307</span><br><span class="line">308</span><br><span class="line">309</span><br><span class="line">310</span><br><span class="line">311</span><br><span class="line">312</span><br><span class="line">313</span><br><span class="line">314</span><br><span class="line">315</span><br><span class="line">316</span><br><span class="line">317</span><br><span class="line">318</span><br><span class="line">319</span><br><span class="line">320</span><br><span class="line">321</span><br><span class="line">322</span><br><span class="line">323</span><br><span class="line">324</span><br><span class="line">325</span><br><span class="line">326</span><br><span class="line">327</span><br><span class="line">328</span><br><span class="line">329</span><br><span class="line">330</span><br><span class="line">331</span><br><span class="line">332</span><br><span class="line">333</span><br><span class="line">334</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-2.0-only</span><br><span class="line"><span class="comment">#include &lt;linux/module.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/init.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/spi/spi.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/gpio/consumer.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/delay.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/fs.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/uaccess.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/cdev.h&gt;</span></span><br><span class="line"><span class="comment">#include &lt;linux/device.h&gt;</span></span><br><span class="line"></span><br><span class="line">/* 标准窗口定义结构体 */</span><br><span class="line">struct st7789v_window &#123;</span><br><span class="line">    unsigned int x1;</span><br><span class="line">    unsigned int y1;</span><br><span class="line">    unsigned int x2;</span><br><span class="line">    unsigned int y2;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">#define ST7789V_IOC_MAGIC &#x27;s&#x27;</span></span><br><span class="line"><span class="comment">#define ST7789V_SET_WINDOW _IOW(ST7789V_IOC_MAGIC, 1, struct st7789v_window)</span></span><br><span class="line"></span><br><span class="line">struct st7789v_priv &#123;</span><br><span class="line">    struct spi_device *spi;</span><br><span class="line">    struct gpio_desc *reset;</span><br><span class="line">    struct gpio_desc *dc;</span><br><span class="line">    struct gpio_desc *blk;</span><br><span class="line">    struct cdev cdev;</span><br><span class="line">    dev_t devt;</span><br><span class="line">    struct class *class;</span><br><span class="line">    struct device *device;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">enum st7789v_prefix &#123;</span><br><span class="line">    ST7789V_COMMAND = 0,</span><br><span class="line">    ST7789V_DATA = 1,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">static int st7789v_write(struct st7789v_priv *priv, enum st7789v_prefix prefix, u8 data)</span><br><span class="line">&#123;</span><br><span class="line">    struct spi_transfer xfer = &#123; &#125;;</span><br><span class="line">    int ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (priv-&gt;dc)</span><br><span class="line">        gpiod_set_value(priv-&gt;dc, (prefix == ST7789V_DATA) ? 1 : 0);</span><br><span class="line"></span><br><span class="line">    xfer.tx_buf = &amp;data;</span><br><span class="line">    xfer.len = 1;</span><br><span class="line"></span><br><span class="line">    ret = spi_sync_transfer(priv-&gt;spi, &amp;xfer, 1);</span><br><span class="line">    <span class="keyword">if</span> (unlikely(ret &lt; 0))</span><br><span class="line">        dev_err(&amp;priv-&gt;spi-&gt;dev, <span class="string">&quot;SPI write failed: %d\n&quot;</span>, ret);</span><br><span class="line">    <span class="built_in">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static int st7789v_write_command(struct st7789v_priv *priv, u8 cmd)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">return</span> st7789v_write(priv, ST7789V_COMMAND, cmd);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static int st7789v_write_data(struct st7789v_priv *priv, u8 data)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">return</span> st7789v_write(priv, ST7789V_DATA, data);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static void st7789v_set_window(struct st7789v_priv *priv, u16 x1, u16 y1, u16 x2, u16 y2)</span><br><span class="line">&#123;</span><br><span class="line">    st7789v_write_command(priv, 0x2A);</span><br><span class="line">    st7789v_write_data(priv, x1 &gt;&gt; 8);</span><br><span class="line">    st7789v_write_data(priv, x1 &amp; 0xFF);</span><br><span class="line">    st7789v_write_data(priv, x2 &gt;&gt; 8);</span><br><span class="line">    st7789v_write_data(priv, x2 &amp; 0xFF);</span><br><span class="line"></span><br><span class="line">    st7789v_write_command(priv, 0x2B);</span><br><span class="line">    st7789v_write_data(priv, y1 &gt;&gt; 8);</span><br><span class="line">    st7789v_write_data(priv, y1 &amp; 0xFF);</span><br><span class="line">    st7789v_write_data(priv, y2 &gt;&gt; 8);</span><br><span class="line">    st7789v_write_data(priv, y2 &amp; 0xFF);</span><br><span class="line"></span><br><span class="line">    st7789v_write_command(priv, 0x2C);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static long st7789v_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)</span><br><span class="line">&#123;</span><br><span class="line">    struct st7789v_priv *priv = filp-&gt;private_data;</span><br><span class="line">    struct st7789v_window win;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (cmd == ST7789V_SET_WINDOW) &#123;</span><br><span class="line">        <span class="keyword">if</span> (copy_from_user(&amp;win, (void __user *)arg, sizeof(win)))</span><br><span class="line">            <span class="built_in">return</span> -EFAULT;</span><br><span class="line">        st7789v_set_window(priv, win.x1, win.y1, win.x2, win.y2);</span><br><span class="line">        <span class="built_in">return</span> 0;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">return</span> -ENOTTY;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static ssize_t st7789v_write_file(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)</span><br><span class="line">&#123;</span><br><span class="line">    struct st7789v_priv *priv = filp-&gt;private_data;</span><br><span class="line">    u8 *kbuf;</span><br><span class="line">    size_t i;</span><br><span class="line">    int ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (count == 0) <span class="built_in">return</span> 0;</span><br><span class="line"></span><br><span class="line">    kbuf = kmalloc(count, GFP_KERNEL);</span><br><span class="line">    <span class="keyword">if</span> (!kbuf) <span class="built_in">return</span> -ENOMEM;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (copy_from_user(kbuf, buf, count)) &#123;</span><br><span class="line">        kfree(kbuf);</span><br><span class="line">        <span class="built_in">return</span> -EFAULT;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (i = 0; i &lt; count; i++) &#123;</span><br><span class="line">        ret = st7789v_write_data(priv, kbuf[i]);</span><br><span class="line">        <span class="keyword">if</span> (ret &lt; 0) &#123;</span><br><span class="line">            kfree(kbuf);</span><br><span class="line">            <span class="built_in">return</span> ret;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    kfree(kbuf);</span><br><span class="line">    <span class="built_in">return</span> (ssize_t)count;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static int st7789v_open(struct inode *inode, struct file *filp)</span><br><span class="line">&#123;</span><br><span class="line">    struct st7789v_priv *priv = container_of(inode-&gt;i_cdev, struct st7789v_priv, cdev);</span><br><span class="line">    filp-&gt;private_data = priv;</span><br><span class="line">    <span class="built_in">return</span> 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static const struct file_operations st7789v_fops = &#123;</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .open = st7789v_open,</span><br><span class="line">    .unlocked_ioctl = st7789v_ioctl,</span><br><span class="line">    .write = st7789v_write_file,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">static int st7789v_init_sequence(struct st7789v_priv *priv)</span><br><span class="line">&#123;</span><br><span class="line">    int ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (priv-&gt;reset) &#123;</span><br><span class="line">        dev_info(&amp;priv-&gt;spi-&gt;dev, <span class="string">&quot;Executing standard hardware reset (GPIO3_A1)...\n&quot;</span>);</span><br><span class="line">        gpiod_set_value(priv-&gt;reset, 1);</span><br><span class="line">        msleep(20);</span><br><span class="line">        gpiod_set_value(priv-&gt;reset, 0); </span><br><span class="line">        msleep(50);</span><br><span class="line">        gpiod_set_value(priv-&gt;reset, 1); </span><br><span class="line">        msleep(150);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>x11)) &lt; 0) <span class="built_in">return</span> ret; </span><br><span class="line">    msleep(120);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>x36)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x00)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>x3A)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x05)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xB2)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x0C)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x0C)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x00)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x33)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x33)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xB7)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x35)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xBB)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x32)) &lt; 0) <span class="built_in">return</span> ret; </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xC2)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x01)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xC3)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x15)) &lt; 0) <span class="built_in">return</span> ret; </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xC4)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x20)) &lt; 0) <span class="built_in">return</span> ret; </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xC6)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x0F)) &lt; 0) <span class="built_in">return</span> ret; </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xD0)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>xA4)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>xA1)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xE0)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>xD0)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x08)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x0E)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x09)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x09)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x05)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x31)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x33)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x48)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x17)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x14)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x15)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x31)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x34)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>xE1)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>xD0)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x08)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x0E)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x09)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x09)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x15)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x31)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x33)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x48)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x17)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x14)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x15)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x31)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_data(priv, <span class="number">0</span>x34)) &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>x21)) &lt; 0) <span class="built_in">return</span> ret; </span><br><span class="line">    <span class="keyword">if</span> ((ret = st7789v_write_command(priv, <span class="number">0</span>x29)) &lt; 0) <span class="built_in">return</span> ret; </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (priv-&gt;blk) &#123;</span><br><span class="line">        dev_info(&amp;priv-&gt;spi-&gt;dev, <span class="string">&quot;Enabling screen backlight (GPIO3_A3)...\n&quot;</span>);</span><br><span class="line">        gpiod_set_value(priv-&gt;blk, 1);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">return</span> 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static int st7789v_probe(struct spi_device *spi)</span><br><span class="line">&#123;</span><br><span class="line">    struct st7789v_priv *priv;</span><br><span class="line">    int ret;</span><br><span class="line"></span><br><span class="line">    priv = devm_kzalloc(&amp;spi-&gt;dev, sizeof(*priv), GFP_KERNEL);</span><br><span class="line">    <span class="keyword">if</span> (!priv) <span class="built_in">return</span> -ENOMEM;</span><br><span class="line"></span><br><span class="line">    priv-&gt;spi = spi;</span><br><span class="line">    spi_set_drvdata(spi, priv);</span><br><span class="line"></span><br><span class="line">    spi-&gt;bits_per_word = 8;</span><br><span class="line">    ret = spi_setup(spi);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    priv-&gt;reset = devm_gpiod_get_optional(&amp;spi-&gt;dev, <span class="string">&quot;reset&quot;</span>, GPIOD_OUT_LOW);</span><br><span class="line">    priv-&gt;dc = devm_gpiod_get_optional(&amp;spi-&gt;dev, <span class="string">&quot;dc&quot;</span>, GPIOD_OUT_LOW);</span><br><span class="line">    priv-&gt;blk = devm_gpiod_get_optional(&amp;spi-&gt;dev, <span class="string">&quot;blk&quot;</span>, GPIOD_OUT_HIGH);</span><br><span class="line"></span><br><span class="line">    ret = alloc_chrdev_region(&amp;priv-&gt;devt, 0, 1, <span class="string">&quot;st7789v&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; 0) <span class="built_in">return</span> ret;</span><br><span class="line"></span><br><span class="line">    cdev_init(&amp;priv-&gt;cdev, &amp;st7789v_fops);</span><br><span class="line">    priv-&gt;cdev.owner = THIS_MODULE;</span><br><span class="line">    ret = cdev_add(&amp;priv-&gt;cdev, priv-&gt;devt, 1);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; 0) goto unregister_region;</span><br><span class="line"></span><br><span class="line">    priv-&gt;class = class_create(THIS_MODULE, <span class="string">&quot;st7789v_class&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(priv-&gt;class)) &#123;</span><br><span class="line">        ret = PTR_ERR(priv-&gt;class);</span><br><span class="line">        goto delete_cdev;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    priv-&gt;device = device_create(priv-&gt;class, NULL, priv-&gt;devt, NULL, <span class="string">&quot;st7789v&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(priv-&gt;device)) &#123;</span><br><span class="line">        ret = PTR_ERR(priv-&gt;device);</span><br><span class="line">        goto destroy_class;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ret = st7789v_init_sequence(priv);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; 0) &#123;</span><br><span class="line">        dev_err(&amp;spi-&gt;dev, <span class="string">&quot;Failed to send initialization sequence\n&quot;</span>);</span><br><span class="line">        goto destroy_device;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    dev_info(&amp;spi-&gt;dev, <span class="string">&quot;ST7789v Standard Clean Driver loaded successfully\n&quot;</span>);</span><br><span class="line">    <span class="built_in">return</span> 0;</span><br><span class="line"></span><br><span class="line">destroy_device:</span><br><span class="line">    device_destroy(priv-&gt;class, priv-&gt;devt);</span><br><span class="line">destroy_class:</span><br><span class="line">    class_destroy(priv-&gt;class);</span><br><span class="line">delete_cdev:</span><br><span class="line">    cdev_del(&amp;priv-&gt;cdev);</span><br><span class="line">unregister_region:</span><br><span class="line">    unregister_chrdev_region(priv-&gt;devt, 1);</span><br><span class="line">    <span class="built_in">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static void st7789v_remove(struct spi_device *spi)</span><br><span class="line">&#123;</span><br><span class="line">    struct st7789v_priv *priv = spi_get_drvdata(spi);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (priv) &#123;</span><br><span class="line">        <span class="keyword">if</span> (priv-&gt;blk)</span><br><span class="line">            gpiod_set_value(priv-&gt;blk, 0);</span><br><span class="line"></span><br><span class="line">        device_destroy(priv-&gt;class, priv-&gt;devt);</span><br><span class="line">        class_destroy(priv-&gt;class);</span><br><span class="line">        cdev_del(&amp;priv-&gt;cdev);</span><br><span class="line">        unregister_chrdev_region(priv-&gt;devt, 1);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static const struct of_device_id st7789v_of_match[] = &#123;</span><br><span class="line">    &#123; .compatible = <span class="string">&quot;sitronix,st7789v&quot;</span> &#125;,</span><br><span class="line">    &#123; &#125;</span><br><span class="line">&#125;;</span><br><span class="line">MODULE_DEVICE_TABLE(of, st7789v_of_match);</span><br><span class="line"></span><br><span class="line">static const struct spi_device_id st7789v_spi_ids[] = &#123;</span><br><span class="line">    &#123; <span class="string">&quot;st7789v&quot;</span>, 0 &#125;,</span><br><span class="line">    &#123; &#125;</span><br><span class="line">&#125;;</span><br><span class="line">MODULE_DEVICE_TABLE(spi, st7789v_spi_ids);</span><br><span class="line"></span><br><span class="line">static struct spi_driver st7789v_driver = &#123;</span><br><span class="line">    .probe = st7789v_probe,</span><br><span class="line">    .remove = st7789v_remove,</span><br><span class="line">    .id_table = st7789v_spi_ids,</span><br><span class="line">    .driver = &#123;</span><br><span class="line">        .name = <span class="string">&quot;st7789v&quot;</span>,</span><br><span class="line">        .of_match_table = st7789v_of_match,</span><br><span class="line">    &#125;,</span><br><span class="line">&#125;;</span><br><span class="line">module_spi_driver(st7789v_driver);</span><br><span class="line"></span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;RuoXie&quot;</span>);</span><br><span class="line">MODULE_DESCRIPTION(<span class="string">&quot;Clean Architecture Standard Driver for ST7789V&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi Makefile</span><br></pre></td></tr></table></figure>
+
+<p><strong>编写Makefile</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">obj-m += st7789.o</span><br><span class="line"></span><br><span class="line"><span class="comment"># 自动获取当前运行内核的构建路径</span></span><br><span class="line">KDIR := /lib/modules/$(shell <span class="built_in">uname</span> -r)/build</span><br><span class="line">PWD  := $(shell <span class="built_in">pwd</span>)</span><br><span class="line"></span><br><span class="line">all:</span><br><span class="line">	make -C $(KDIR) M=$(PWD) modules</span><br><span class="line"></span><br><span class="line">clean:</span><br><span class="line">	make -C $(KDIR) M=$(PWD) clean</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="3-2-编译并且加载st7789驱动"><a href="#3-2-编译并且加载st7789驱动" class="headerlink" title="3.2 编译并且加载st7789驱动"></a>3.2 编译并且加载st7789驱动</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> root/lvgl_st7789/st7789</span><br><span class="line"><span class="comment">#编译</span></span><br><span class="line">make</span><br><span class="line"><span class="comment">#加载驱动</span></span><br><span class="line"><span class="built_in">sudo</span> insmod st7789.ko</span><br></pre></td></tr></table></figure>
+
+<h2 id="四-运行程序"><a href="#四-运行程序" class="headerlink" title="四 运行程序"></a>四 运行程序</h2><h3 id="4-1-运行lvgl"><a href="#4-1-运行lvgl" class="headerlink" title="4.1 运行lvgl"></a>4.1 运行lvgl</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> lvgl_st7789</span><br><span class="line"><span class="built_in">sudo</span> ./lvgl_demo</span><br></pre></td></tr></table></figure>
+
+
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://ruoxie188.github.io/new-blog">ruoxie</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://ruoxie188.github.io/new-blog/2026/05/27/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A05-1-%E4%BD%BF%E7%94%A8tft%E5%B1%8F%E5%B9%95%E8%BF%90%E8%A1%8Clvgl/">https://ruoxie188.github.io/new-blog/2026/05/27/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A05-1-%E4%BD%BF%E7%94%A8tft%E5%B1%8F%E5%B9%95%E8%BF%90%E8%A1%8Clvgl/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://ruoxie188.github.io/new-blog" target="_blank">若邪的博客空间</a>！</span></div></div><div class="tag_share"><div class="post-share"><div class="social-share" data-image="/new-blog/img/avatar.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/" title="linux驱动学习2-1-HelloWorld"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">linux驱动学习2-1-HelloWorld</div></div><div class="info-2"><div class="info-item-1">linux驱动学习2-1-HelloWorld 本篇将手把手详细讲述如何运行第一个驱动程序-HelloWord  目录 搭建驱动环境 编写驱动程序 运行驱动程序   一 搭建驱动环境1.1 下载DEB包到开发板下载linux-headers-6.1.141_6.1.141-1_arm64.deb 本地直接下载  下载linux-libc-dev_6.1.141-1_arm64.deb 本地直接下载  1.2 安装DEB包12# 强行安装并覆盖之前的版本dpkg -i linux-headers-6.1.141_6.1.141-1_arm64.deb linux-libc-dev_6.1.141-1_arm64.deb  ▼ 运行输出界面：  修正软链接 12345# 因为你的包名没有后缀，所以路径应该是 /usr/src/linux-headers-6.1.141ln -sfn /usr/src/linux-headers-6.1.141 /lib/modules/$(uname -r)/build# 验证链接是否生效ls -l /lib/modules/$(uname -r)/...</div></div></div></a></nav><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/new-blog/img/avatar.jpg" onerror="this.onerror=null;this.src='/new-blog/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">ruoxie</div><div class="author-info-description">既然出发了，就不要回头。</div><div class="site-data"><a href="/new-blog/archives/"><div class="headline">文章</div><div class="length-num">3</div></a><a href="/new-blog/tags/"><div class="headline">标签</div><div class="length-num">0</div></a><a href="/new-blog/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/ruoxie188"><i class="fab fa-github"></i><span>关注我</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/ruoxie188" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:你的邮箱@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的新博客！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A05-1-%E4%BD%BF%E7%94%A8tft%E5%B1%8F%E5%B9%95%E8%BF%90%E8%A1%8Clvgl"><span class="toc-number">1.</span> <span class="toc-text">linux驱动学习5-1-使用tft屏幕运行lvgl</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.1.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80-%E6%90%AD%E5%BB%BALVGL%E7%8E%AF%E5%A2%83"><span class="toc-number">1.2.</span> <span class="toc-text">一 搭建LVGL环境</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E5%88%9B%E5%BB%BA%E6%96%87%E4%BB%B6%E5%A4%B9"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.1 创建文件夹</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E6%8B%89%E5%8F%96lvgl%E4%BB%A3%E7%A0%81"><span class="toc-number">1.2.2.</span> <span class="toc-text">1.2 拉取lvgl代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-%E9%85%8D%E7%BD%AElv-conf-h"><span class="toc-number">1.2.3.</span> <span class="toc-text">1.3 配置lv_conf.h</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-4-%E7%BC%96%E5%86%99main-c%E4%BB%A3%E7%A0%81"><span class="toc-number">1.2.4.</span> <span class="toc-text">1.4 编写main.c代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-5-%E7%BC%96%E5%86%99Makefile"><span class="toc-number">1.2.5.</span> <span class="toc-text">1.5 编写Makefile</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C-%E7%BC%96%E8%AF%91LVGL"><span class="toc-number">1.3.</span> <span class="toc-text">二 编译LVGL</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E7%BC%96%E8%AF%91lvgl%E7%A8%8B%E5%BA%8F"><span class="toc-number">1.3.1.</span> <span class="toc-text">2.1 编译lvgl程序</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89-%E7%BC%96%E5%86%99%E7%A8%8B%E5%BA%8F"><span class="toc-number">1.4.</span> <span class="toc-text">三 编写程序</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E5%88%9B%E5%BB%BA%E6%96%87%E4%BB%B6%E5%A4%B9"><span class="toc-number">1.4.1.</span> <span class="toc-text">3.1 创建文件夹</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E7%BC%96%E8%AF%91%E5%B9%B6%E4%B8%94%E5%8A%A0%E8%BD%BDst7789%E9%A9%B1%E5%8A%A8"><span class="toc-number">1.4.2.</span> <span class="toc-text">3.2 编译并且加载st7789驱动</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B-%E8%BF%90%E8%A1%8C%E7%A8%8B%E5%BA%8F"><span class="toc-number">1.5.</span> <span class="toc-text">四 运行程序</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E8%BF%90%E8%A1%8Clvgl"><span class="toc-number">1.5.1.</span> <span class="toc-text">4.1 运行lvgl</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/new-blog/2026/05/27/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A05-1-%E4%BD%BF%E7%94%A8tft%E5%B1%8F%E5%B9%95%E8%BF%90%E8%A1%8Clvgl/" title="linux驱动学习5-1-使用tft屏幕运行lvgl">linux驱动学习5-1-使用tft屏幕运行lvgl</a><time datetime="2026-05-27T13:38:34.000Z" title="发表于 2026-05-27 21:38:34">2026-05-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/new-blog/2026/05/20/linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A02-1-HelloWorld/" title="linux驱动学习2-1-HelloWorld">linux驱动学习2-1-HelloWorld</a><time datetime="2026-05-20T03:40:29.000Z" title="发表于 2026-05-20 11:40:29">2026-05-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/new-blog/2026/05/16/hello-world/" title="Hello World">Hello World</a><time datetime="2026-05-16T04:34:55.488Z" title="发表于 2026-05-16 12:34:55">2026-05-16</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By ruoxie</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.2</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/new-blog/js/utils.js?v=5.5.4"></script><script src="/new-blog/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'ruoxie188/new-blog',
+      'data-repo-id': 'R_kgDOSe79BA',
+      'data-category-id': 'DIC_kwDOSe79BM4C9zOi',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !true) {
+    if (true) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/new-blog/js/spine-player.js"></script><div id="spine-chen2-container"></div><div id="atmosphere-btn" title="特效菜单"><i class="fas fa-magic"></i></div><div id="atmosphere-menu">
+  <div class="atm-item" data-type="snow" title="雪花">❄️</div>
+  <div class="atm-item" data-type="sakura" title="樱花">🌸</div>
+  <div class="atm-item" data-type="heart" title="爱心">❤️</div>
+  <div class="atm-item" data-type="star" title="星星">✨</div>
+  <div class="atm-item" data-type="off" title="关闭特效">🚫</div>
+</div>
+<script>
+  // ==========================================
+  // 1. GitHub 贡献墙
+  // ==========================================
+  function finalStyleInject() {
+    var target = document.getElementById('recent-posts');
+    if (!target || document.getElementById('gh-perfect-card')) return;
+    var card = document.createElement('div');
+    card.id = 'gh-perfect-card';
+    card.className = 'recent-post-item'; 
+    card.style.padding = '20px 30px';
+    card.style.flexDirection = 'column';
+    card.style.alignItems = 'flex-start';
+    card.innerHTML = `<div style="font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: var(--font-color);"><i class="fab fa-github" style="margin-right:8px"></i>GitHub 贡献墙</div><div style="width:100%; overflow-x: auto;"><img src="https://ghchart.rshah.org/40c463/ruoxie188" style="width:100%; min-width: 650px; height:auto; display:block;" alt="GitHub Contribution Chart"></div>`;
+    target.insertBefore(card, target.firstChild);
+    var oldCard = document.getElementById('gh-test-card');
+    if (oldCard) oldCard.remove();
+  }
+
+  // ==========================================
+  // 2. Spine 模型加载
+  // ==========================================
+  function initSpine() {
+    if (typeof spine === 'undefined') { 
+      setTimeout(initSpine, 300); 
+      return; 
+    }
+    if (document.querySelector('#spine-chen2-container canvas')) return;
+    try {
+      new spine.SpinePlayer("spine-chen2-container", {
+        skelUrl: "/new-blog/assets/spine/chen2/chen2.skel",
+        atlasUrl: "/new-blog/assets/spine/chen2/chen2.atlas",
+        animation: "Idle",
+        premultipliedAlpha: true,
+        backgroundColor: "#00000000",
+        alpha: true,
+        showControls: false
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // ==========================================
+  // 3. Canvas 多功能粒子特效引擎
+  // ==========================================
+  (function() {
+    let canvas = document.getElementById('atm-canvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.id = 'atm-canvas';
+      document.body.appendChild(canvas);
+    }
+    const ctx = canvas.getContext('2d');
+    let animationFrameId = null;
+    let particles = [];
+    let currentType = 'off';
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      constructor(type, isInit = false) {
+        this.type = type;
+        this.reset(isInit);
+      }
+      reset(isInit = false) {
+        this.x = Math.random() * canvas.width;
+        this.y = isInit ? Math.random() * canvas.height : -20;
+        this.size = Math.random() * 8 + 6;
+        this.speedY = Math.random() * 1.2 + 0.6;
+        this.speedX = Math.random() * 1.0 - 0.5;
+        this.angle = Math.random() * Math.PI * 2;
+        this.spin = Math.random() * 0.02 - 0.01;
+        this.opacity = Math.random() * 0.4 + 0.5;
+      }
+      update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        this.angle += this.spin;
+        if (this.y > canvas.height + 20 || this.x < -20 || this.x > canvas.width + 20) {
+          this.reset(false);
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        if (this.type === 'snow') {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'sakura') {
+          ctx.fillStyle = '#ffb7c5';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, this.size, this.size / 1.7, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'heart') {
+          ctx.font = `${this.size * 1.5}px Arial`;
+          ctx.fillText('❤️', -this.size, this.size / 2);
+        } else if (this.type === 'star') {
+          ctx.font = `${this.size * 1.5}px Arial`;
+          ctx.fillText('✨', -this.size, this.size / 2);
+        }
+        ctx.restore();
+      }
+    }
+
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (currentType === 'off') return;
+
+      if (particles.length < 50) {
+        particles.push(new Particle(currentType, false));
+      }
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      animationFrameId = requestAnimationFrame(loop);
+    }
+
+    window.setAtmosphere = function(type) {
+      currentType = type;
+      cancelAnimationFrame(animationFrameId);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles = [];
+      if (type !== 'off') {
+        for (let i = 0; i < 25; i++) {
+          particles.push(new Particle(type, true));
+        }
+        loop();
+      }
+    };
+
+    // 绑定菜单控制
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('atmosphere-btn');
+      const menu = document.getElementById('atmosphere-menu');
+      if(btn && menu) {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          menu.classList.toggle('show');
+        });
+        document.querySelectorAll('.atm-item').forEach(item => {
+          item.addEventListener('click', function() {
+            document.querySelectorAll('.atm-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            window.setAtmosphere(this.getAttribute('data-type'));
+            menu.classList.remove('show');
+          });
+        });
+        document.addEventListener('click', () => menu.classList.remove('show'));
+      }
+    });
+  })();
+
+  // ==========================================
+  // 4. 统一执行
+  // ==========================================
+  function runCustomScripts() {
+    finalStyleInject();
+    initSpine();
+  }
+
+  window.addEventListener('load', runCustomScripts);
+  document.addEventListener('pjax:complete', runCustomScripts);
+  runCustomScripts();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script><meting-js
+  server="tencent"
+  type="playlist"
+  id="9581551707" 
+  fixed="true"
+  mini="true"
+  order="random"
+  loop="all"
+  preload="auto"
+  volume="0.3">
+</meting-js>   
+<script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
